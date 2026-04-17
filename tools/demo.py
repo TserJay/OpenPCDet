@@ -68,6 +68,7 @@ def parse_config():
                         help='specify the point cloud data file or directory')
     parser.add_argument('--ckpt', type=str, default=None, help='specify the pretrained model')
     parser.add_argument('--ext', type=str, default='.bin', help='specify the extension of your point cloud data file')
+    parser.add_argument('--save_path', type=str, default='output', help='specify the output directory for visualization images')
 
     args = parser.parse_args()
 
@@ -86,6 +87,11 @@ def main():
     )
     logger.info(f'Total number of samples: \t{len(demo_dataset)}')
 
+    # Create output directory
+    output_dir = Path(args.save_path)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(f'Output directory: {output_dir}')
+
     model = build_network(model_cfg=cfg.MODEL, num_class=len(cfg.CLASS_NAMES), dataset=demo_dataset)
     model.load_params_from_file(filename=args.ckpt, logger=logger, to_cpu=True)
     model.cuda()
@@ -97,9 +103,13 @@ def main():
             load_data_to_gpu(data_dict)
             pred_dicts, _ = model.forward(data_dict)
 
+            # Generate save path for this sample
+            save_path = output_dir / f'scene_{idx:04d}.png'
+
             V.draw_scenes(
                 points=data_dict['points'][:, 1:], ref_boxes=pred_dicts[0]['pred_boxes'],
-                ref_scores=pred_dicts[0]['pred_scores'], ref_labels=pred_dicts[0]['pred_labels']
+                ref_scores=pred_dicts[0]['pred_scores'], ref_labels=pred_dicts[0]['pred_labels'],
+                save_path=str(save_path)
             )
 
             if not OPEN3D_FLAG:

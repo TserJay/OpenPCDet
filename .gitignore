@@ -2,7 +2,7 @@
 **build**
 **egg-info**
 **dist**
-data/
+data/kitti/training
 *.pyc
 venv/
 *.idea/

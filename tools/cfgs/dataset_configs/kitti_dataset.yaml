@@ -1,5 +1,5 @@
 DATASET: 'KittiDataset'
-DATA_PATH: '../data/kitti'
+DATA_PATH: 'data/kitti'
 
 POINT_CLOUD_RANGE: [0, -40, -3, 70.4, 40, 1]
 
@@ -13,16 +13,16 @@ INFO_PATH: {
     'test': [kitti_infos_val.pkl],
 }
 
-GET_ITEM_LIST: ["points"]
-FOV_POINTS_ONLY: True
+GET_ITEM_LIST: ["points"] # 加载哪些数据字段
+FOV_POINTS_ONLY: False # 是否只保留前视相机范围内的点（依赖图像内参），True必须使用图像数据
 
 DATA_AUGMENTOR:
     DISABLE_AUG_LIST: ['placeholder']
     AUG_CONFIG_LIST:
         - NAME: gt_sampling
-          USE_ROAD_PLANE: True
+          USE_ROAD_PLANE: True # 使用道路平面辅助
           DB_INFO_PATH:
-              - kitti_dbinfos_train.pkl
+              - kitti_dbinfos_train.pkl # GT数据库路径 
           PREPARE: {
              filter_by_min_points: ['Car:5', 'Pedestrian:5', 'Cyclist:5'],
              filter_by_difficulty: [-1],
