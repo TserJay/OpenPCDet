@@ -50,50 +50,52 @@ DATA_CONFIG:
 MODEL:
     NAME: PointPillar
 
-    VFE:
-        NAME: PillarVFE
-        WITH_DISTANCE: False
-        USE_ABSLOTE_XYZ: True
-        USE_NORM: True
-        NUM_FILTERS: [64]
+    VFE: 
+        NAME: PillarVFE  # 点云特征编码器
+        WITH_DISTANCE: False # 是否使用距离特征（false = xyz）
+        USE_ABSLOTE_XYZ: True # 是否使用绝对坐标
+        USE_NORM: True 
+        NUM_FILTERS: [64] # 特征维度
+        # 将点云里每个pillar编码成特征向量
 
     MAP_TO_BEV:
-        NAME: PointPillarScatter
-        NUM_BEV_FEATURES: 64
+        NAME: PointPillarScatter # 把 Pillar 特征散布回伪图像（BEV）
+        NUM_BEV_FEATURES: 64 # BEV 的特征维度（通道数）
 
     BACKBONE_2D:
-        NAME: BaseBEVBackbone
-        LAYER_NUMS: [3, 5, 5]
-        LAYER_STRIDES: [2, 2, 2]
-        NUM_FILTERS: [64, 128, 256]
-        UPSAMPLE_STRIDES: [1, 2, 4]
-        NUM_UPSAMPLE_FILTERS: [128, 128, 128]
+        NAME: BaseBEVBackbone # 2D 主干网络
+        LAYER_NUMS: [3, 5, 5] # 每阶段卷积层个数
+        LAYER_STRIDES: [2, 2, 2] # 每一阶段的步长（决定特征图的大小）
+        NUM_FILTERS: [64, 128, 256] # 每一阶段通道数
+        UPSAMPLE_STRIDES: [1, 2, 4] # 上采样倍数（还原空间尺寸）
+        NUM_UPSAMPLE_FILTERS: [128, 128, 128] # 上采样后的通道数
+        # 特征提取主干网络，输出多尺度 BEV 特征
 
     DENSE_HEAD:
-        NAME: AnchorHeadSingle
-        CLASS_AGNOSTIC: False
+        NAME: AnchorHeadSingle # 检测头类名
+        CLASS_AGNOSTIC: False # 类别相关预测（false = 每个类独立预测）
 
-        USE_DIRECTION_CLASSIFIER: True
-        DIR_OFFSET: 0.78539
-        DIR_LIMIT_OFFSET: 0.0
-        NUM_DIR_BINS: 2
+        USE_DIRECTION_CLASSIFIER: True # 是否预测朝向
+        DIR_OFFSET: 0.78539 # 朝向偏移（约45度）
+        DIR_LIMIT_OFFSET: 0.0 # 朝向限制偏移
+        NUM_DIR_BINS: 2 # 朝向分类数（2=两个方向：0度和180度）
 
         ANCHOR_GENERATOR_CONFIG: [
             {
-                'class_name': 'Car',
-                'anchor_sizes': [[3.9, 1.6, 1.56]],
-                'anchor_rotations': [0, 1.57],
-                'anchor_bottom_heights': [-1.78],
-                'align_center': False,
-                'feature_map_stride': 2,
-                'matched_threshold': 0.6,
-                'unmatched_threshold': 0.45
+                'class_name': 'Car', # 检测类别
+                'anchor_sizes': [[3.9, 1.6, 1.56]], # anchor 长宽高（米）
+                'anchor_rotations': [0, 1.57], # anchor 旋转角度（弧度）
+                'anchor_bottom_heights': [-1.78],  # anchor 底部高度
+                'align_center': False, # 是否对齐中心
+                'feature_map_stride': 2, # 特征图相对原图的下采样倍数
+                'matched_threshold': 0.6, # 正样本IoU阈值
+                'unmatched_threshold': 0.45 # 负样本IoU阈值
             },
             {
-                'class_name': 'Pedestrian',
-                'anchor_sizes': [[0.8, 0.6, 1.73]],
-                'anchor_rotations': [0, 1.57],
-                'anchor_bottom_heights': [-0.6],
+                'class_name': 'Pedestrian', 
+                'anchor_sizes': [[0.8, 0.6, 1.73]],  
+                'anchor_rotations': [0, 1.57], 
+                'anchor_bottom_heights': [-0.6],  
                 'align_center': False,
                 'feature_map_stride': 2,
                 'matched_threshold': 0.5,
@@ -112,53 +114,55 @@ MODEL:
         ]
 
         TARGET_ASSIGNER_CONFIG:
-            NAME: AxisAlignedTargetAssigner
-            POS_FRACTION: -1.0
-            SAMPLE_SIZE: 512
-            NORM_BY_NUM_EXAMPLES: False
-            MATCH_HEIGHT: False
-            BOX_CODER: ResidualCoder
+            NAME: AxisAlignedTargetAssigner  # 目标分配类名，
+            POS_FRACTION: -1.0 # 正样本比例（-1=全部正样本）
+            SAMPLE_SIZE: 512  # 采样数量
+            NORM_BY_NUM_EXAMPLES: False  # 是否按样本数归一化
+            MATCH_HEIGHT: False  # 是否按高度匹配
+            BOX_CODER: ResidualCoder # 编码方式（预测残差而非绝对值）
+            # 把 anchor 分配给 ground truth，计算回归目标
 
         LOSS_CONFIG:
             LOSS_WEIGHTS: {
-                'cls_weight': 1.0,
-                'loc_weight': 2.0,
-                'dir_weight': 0.2,
-                'code_weights': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+                'cls_weight': 1.0, # 分类 loss 权重
+                'loc_weight': 2.0, # 定位 loss 权重
+                'dir_weight': 0.2,  # 朝向 loss 权重
+                'code_weights': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0] # 7个回归值的权重
             }
 
     POST_PROCESSING:
-        RECALL_THRESH_LIST: [0.3, 0.5, 0.7]
-        SCORE_THRESH: 0.1
-        OUTPUT_RAW_SCORE: False
+        RECALL_THRESH_LIST: [0.3, 0.5, 0.7] # 计算recall的阈值
+        SCORE_THRESH: 0.1  # 置信度过滤阈值
+        OUTPUT_RAW_SCORE: False  # 是否输出原始分数
 
-        EVAL_METRIC: kitti
+        EVAL_METRIC: kitti  # 评估指标
 
         NMS_CONFIG:
-            MULTI_CLASSES_NMS: False
-            NMS_TYPE: nms_gpu
-            NMS_THRESH: 0.01
-            NMS_PRE_MAXSIZE: 4096
-            NMS_POST_MAXSIZE: 500
+            MULTI_CLASSES_NMS: False  # 是否多类别NMS
+            NMS_TYPE: nms_gpu  # NMS类型（gpu加速）
+            NMS_THRESH: 0.01  # IoU阈值
+            NMS_PRE_MAXSIZE: 4096 # NMS前保留框数
+            NMS_POST_MAXSIZE: 500  # NMS后保留框数
 
 
 OPTIMIZATION:
     BATCH_SIZE_PER_GPU: 4
     NUM_EPOCHS: 80
 
-    OPTIMIZER: adam_onecycle
+    OPTIMIZER: adam_onecycle # 使用 Adam + OneCycle 学习率调度
     LR: 0.003
-    WEIGHT_DECAY: 0.01
+    WEIGHT_DECAY: 0.01  # L2 正则化，防止过拟合
     MOMENTUM: 0.9
-
-    MOMS: [0.95, 0.85]
-    PCT_START: 0.4
-    DIV_FACTOR: 10
-    DECAY_STEP_LIST: [35, 45]
-    LR_DECAY: 0.1
-    LR_CLIP: 0.0000001
-
-    LR_WARMUP: False
+ 
+    # OneCycle 学习率参数
+    MOMS: [0.95, 0.85]   # [起始动量, 结束动量]
+    PCT_START: 0.4  # 40% 的训练时间用于warmup（升学习率）
+    DIV_FACTOR: 10  # 初始LR = 0.003/10 = 0.0003
+    DECAY_STEP_LIST: [35, 45] # 在第 35、45 epoch 时衰减
+    LR_DECAY: 0.1  # 衰减因子 ×0.1
+    LR_CLIP: 0.0000001 # 学习率最低不低于 1e-7
+ 
+    LR_WARMUP: False  # 不使用额外 warmup（OneCycle 自带
     WARMUP_EPOCH: 1
 
-    GRAD_NORM_CLIP: 10
+    GRAD_NORM_CLIP: 10   # 梯度裁剪，防止梯度爆炸
